@@ -14,4 +14,5 @@
 - Disable CLion Tar/GZip
   - Copies symbolic links
   - https://stackoverflow.com/a/67802186
+- usermod -a -G render %user%
 ```
