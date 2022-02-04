@@ -111,6 +111,14 @@ CLData create_kernel() {
         exit(1);
     }
 
+    size_t valueSize;
+    clGetDeviceInfo(device_id, CL_DEVICE_NAME, 0, NULL, &valueSize);
+    char* value = (char*) malloc(valueSize);
+    clGetDeviceInfo(device_id, CL_DEVICE_NAME, valueSize, value, NULL);
+
+    printf(value);
+    printf("\n");
+
     CLData data = {.kernel = kernel, .ctx = context, .queue = queue, .a = a, .b = b, .out = out, .size = size};
     return data;
 }
