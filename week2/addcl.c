@@ -1,6 +1,6 @@
 #include <CL/cl.h>
 
-const char* kernelSource = "kernel void matrix_sum(\n"
+const char* kernelSource = "kernel void add_matrix(\n"
                            "    global int* a,\n"
                            "    global int* b,\n"
                            "    global int* out\n"
@@ -59,7 +59,7 @@ CLData create_kernel() {
         exit(1);
     }
 
-    kernel = clCreateKernel(program, "matrix_sum", &err);
+    kernel = clCreateKernel(program, "add_matrix", &err);
     if (err != CL_SUCCESS) {
         printf("Failed to create kernel\n");
         exit(1);

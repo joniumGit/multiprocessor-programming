@@ -8,7 +8,7 @@
 #include <CL/cl.h>
 #include "addcl.c"
 
-void addMatrix2(const cl_int* m1, const cl_int* m2, cl_int* result) {
+void Add_Matrix(const cl_int* m1, const cl_int* m2, cl_int* result) {
     for (cl_int i = 0; i < MATRIX_SIZE; i++) {
         *(result + i) = *(m1 + i) + *(m2 + i);
     }
@@ -44,7 +44,7 @@ cl_int main() {
     CLData data = create_kernel();
 
     char* strings[] = {"OpenCL Took %f ms", "C(i) Took %f ms"};
-    void* calls[] = {(void*) &addMatrixOpenCL, (void*) &addMatrix2};
+    void* calls[] = {(void*) &addMatrixOpenCL, (void*) &Add_Matrix};
     void* args[] = {&data, NULL};
 
     for (int i = 0; i < 2; i++) {
