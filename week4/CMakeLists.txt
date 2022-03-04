@@ -20,3 +20,9 @@ add_executable(week4 main.cpp)
 target_include_directories(week4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(week4 ${OpenCL_LIBRARY})
 target_link_libraries(week4 lodepng)
+
+add_custom_target(
+        images
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/images ${CMAKE_CURRENT_BINARY_DIR}/images
+)
+add_dependencies(week4 images)
