@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cmath>
 #include "lodepng.h"
+#include "zncc.cpp"
+#include "pthread.h"
 
 #define pixels std::vector<unsigned char>
 
@@ -83,33 +85,34 @@ void downSample(Image* image, int factor) {
     image->setData(&data);
 }
 
-Image znccHorizontal(Image* left, Image* right, int window, int max_disparity) {
+Image znccHorizontal_RMINUS(Image* left, Image* right, int window, int max_disparity) {
     int width = (int) left->width;
     int height = (int) left->height;
     auto disparityMap = std::vector<double>(width * height, 0);
     int idx = 0;
-    std::cout << "ZNCC Starting\n" << " - window: " << window << "\n - max d: " << max_disparity << std::endl;
+    std::cout << "ZNCC (RM) Starting\n" << " - window: " << window << "\n - max d: " << max_disparity << std::endl;
     double lineCount = 0;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             double topZncc = 0;
             int bestDisparity = 0;
-            for (int d = 0; d < max_disparity; d++) {
+            int d = 0;
+            next:
+            for (; d < max_disparity; d++) {
                 if (x - d - window / 2 < 0) continue;
+                if (x - d + window / 2 >= width) continue;
                 // Avg
                 double avgL = 0;
                 double avgR = 0;
-                double count = 0;
 
                 for (int j = -window / 2; j < window / 2; j++) {
-                    if (x + j >= width or x + j < 0) continue;
+                    if (x - d + j >= width or x - d + j < 0) goto next;
                     avgL += left->data[(y * width) + x + j];
                     avgR += right->data[(y * width) + x - d + j];
-                    count++;
                 }
 
-                avgL /= count;
-                avgR /= count;
+                avgL /= window;
+                avgR /= window;
                 // ZNCC
                 double top_sum = 0;
                 double bot_sum_l = 0;
@@ -117,7 +120,6 @@ Image znccHorizontal(Image* left, Image* right, int window, int max_disparity) {
                 double zncc;
 
                 for (int j = -window / 2; j < window / 2; j++) {
-                    if (x + j >= width or x + j < 0) continue;
                     // Get values
                     double valL = left->data[(y * width) + x + j] - avgL;
                     double valR = right->data[(y * width) + x - d + j] - avgR;
@@ -169,63 +171,50 @@ Image znccHorizontal(Image* left, Image* right, int window, int max_disparity) {
     return data;
 }
 
-Image zncc(Image* left, Image* right, int window, int max_disparity) {
+Image znccHorizontal_RPLUS(Image* left, Image* right, int window, int max_disparity) {
     int width = (int) left->width;
     int height = (int) left->height;
     auto disparityMap = std::vector<double>(width * height, 0);
     int idx = 0;
-    std::cout << "ZNCC Starting\n" << " - window: " << window << "\n - max d: " << max_disparity << std::endl;
+    std::cout << "ZNCC (RP) Starting\n" << " - window: " << window << "\n - max d: " << max_disparity << std::endl;
     double lineCount = 0;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             double topZncc = 0;
             int bestDisparity = 0;
-            for (int d = 0; d < max_disparity; d++) {
-                if (y - d - window / 2 < 0) continue;
-                if (x - d - window / 2 < 0) continue;
+            int d = 0;
+            next:
+            for (; d < max_disparity; d++) {
+                if (x + d - window / 2 < 0) continue;
+                if (x + d + window / 2 >= width) continue;
                 // Avg
                 double avgL = 0;
                 double avgR = 0;
-                double count = 0;
-                for (int dx = 0; dx < 2; dx++) {
-                    for (int dy = 0; dx < 2; dx++) {
-                        if (dx == dy == 0) continue;
-                        for (int i = -window / 2; i < window / 2; i++) {
-                            if (y + i >= height or y + i < 0) continue;
-                            for (int j = -window / 2; j < window / 2; j++) {
-                                if (x + j >= width or x + j < 0) continue;
-                                avgL += left->data[((y + i) * width) + x - d + j];
-                                avgR += right->data[((y + i - d * dy) * width) + x - d * dx + j];
-                                count++;
-                            }
-                        }
-                    }
+
+                for (int j = -window / 2; j < window / 2; j++) {
+                    if (x + d + j >= width or x + d + j < 0) goto next;
+                    avgL += left->data[(y * width) + x + j];
+                    avgR += right->data[(y * width) + x + d + j];
                 }
-                avgL /= count;
-                avgR /= count;
+
+                avgL /= window;
+                avgR /= window;
                 // ZNCC
                 double top_sum = 0;
                 double bot_sum_l = 0;
                 double bot_sum_r = 0;
                 double zncc;
-                for (int dx = 0; dx < 2; dx++) {
-                    for (int dy = 0; dx < 2; dx++) {
-                        if (dx == dy == 0) continue;
-                        for (int i = -window / 2; i < window / 2; i++) {
-                            if (y + i >= height or y + i < 0) continue;
-                            for (int j = -window / 2; j < window / 2; j++) {
-                                if (x + j >= width or x + j < 0) continue;
-                                // Get values
-                                double valL = left->data[((y + i) * width) + x - d + j] - avgL;
-                                double valR = right->data[((y + i - d * dy) * width) + x - d * dx + j] - avgR;
-                                // Do sum
-                                top_sum += valL * valR;
-                                bot_sum_l += valL * valL;
-                                bot_sum_r += valR * valR;
-                            }
-                        };
-                    }
+
+                for (int j = -window / 2; j < window / 2; j++) {
+                    // Get values
+                    double valL = left->data[(y * width) + x + j] - avgL;
+                    double valR = right->data[(y * width) + x + d + j] - avgR;
+                    // Do sum
+                    top_sum += valL * valR;
+                    bot_sum_l += valL * valL;
+                    bot_sum_r += valR * valR;
                 }
+
                 // SQRT
                 bot_sum_l = std::sqrt(bot_sum_l);
                 bot_sum_r = std::sqrt(bot_sum_r);
@@ -268,6 +257,7 @@ Image zncc(Image* left, Image* right, int window, int max_disparity) {
     return data;
 }
 
+
 void crossCheck(Image* a, Image* b, unsigned threshold) {
     for (int i = 0; i < a->data.size(); i++) {
         if (abs(a->data[i] - b->data[i]) > threshold) {
@@ -303,4 +293,26 @@ void oculus(Image* a, Image* b) {
             }
         }
     }
+}
+
+void znccHorizontalThread(
+        Image* left,
+        Image* right,
+        Image* outLTR,
+        Image* outRTL,
+        int window,
+        int max_disparity,
+        unsigned from,
+        unsigned to
+        ) {
+
+}
+
+void invokeThreaded(unsigned short n, Image* left, Image* right, int window, int max_disparity) {
+    unsigned short step = (unsigned short) left->height / n;
+    //
+    for( long i = 0; i < n - 1; i++) {
+
+    }
+
 }

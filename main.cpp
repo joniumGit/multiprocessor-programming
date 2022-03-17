@@ -3,10 +3,10 @@
 #include "gpucalc.cpp"
 #include "image.cpp"
 
-#define CS_THRESHOLD 16
+#define CS_THRESHOLD 20
 #define SCALE_FACTOR 4
-#define MAX_DISPARITY (int)(image_0.width * 0.10)
-#define WINDOW_SIZE   (int)(image_0.width * 0.02)
+#define MAX_DISPARITY 100
+#define WINDOW_SIZE   25
 
 
 #define base "images/"
@@ -54,8 +54,8 @@ int main() {
     out("b: " << image_1.str)
     separate
     start = clock();
-    Image disp_0 = znccHorizontal(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
-    Image disp_1 = znccHorizontal(&image_0, &image_1, WINDOW_SIZE, MAX_DISPARITY);
+    Image disp_0 = znccHorizontal_RPLUS(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
+    Image disp_1 = znccHorizontal_RMINUS(&image_0, &image_1, WINDOW_SIZE, MAX_DISPARITY);
     end = clock();
     std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl;
     save(disp_0, "im1-im0-disp")

@@ -16,7 +16,7 @@ add_library(
 )
 target_include_directories(lodepng PUBLIC ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR})
 
-add_executable(week4 main.cpp)
+add_executable(week4 main.cpp zncc.cpp)
 target_include_directories(week4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(week4 ${OpenCL_LIBRARY})
 target_link_libraries(week4 lodepng)
