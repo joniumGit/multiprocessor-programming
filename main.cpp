@@ -1,12 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 #include "gpucalc.cpp"
-#include "image.cpp"
+#include "zncc.cpp"
 
-#define CS_THRESHOLD 20
+#define CS_THRESHOLD 16
 #define SCALE_FACTOR 4
 #define MAX_DISPARITY 100
-#define WINDOW_SIZE   25
+#define WINDOW_SIZE   12
 
 
 #define base "images/"
