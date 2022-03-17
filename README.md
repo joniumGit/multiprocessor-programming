@@ -16,3 +16,5 @@
   - https://stackoverflow.com/a/67802186
 - usermod -a -G render %user%
 ```
+
+#### Repo history contain other weeks
