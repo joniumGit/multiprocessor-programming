@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(week4)
+project(multiprocessor)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -19,14 +19,14 @@ target_include_directories(lodepng PUBLIC ${PROJECT_SOURCE_DIR}/include ${PROJEC
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_executable(week4 main.cpp)
-target_include_directories(week4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(week4 ${OpenCL_LIBRARY})
-target_link_libraries(week4 lodepng)
-target_link_libraries(week4 Threads::Threads)
+add_executable(multiprocessor main.cpp)
+target_include_directories(multiprocessor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(multiprocessor ${OpenCL_LIBRARY})
+target_link_libraries(multiprocessor lodepng)
+target_link_libraries(multiprocessor Threads::Threads)
 
 add_custom_target(
         images
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/images ${CMAKE_CURRENT_BINARY_DIR}/images
 )
-add_dependencies(week4 images)
+add_dependencies(multiprocessor images)
