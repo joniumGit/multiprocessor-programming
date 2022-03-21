@@ -6,8 +6,10 @@
 # Possible build output
 out
 target
-#
+# VS
 cmake-build*
+CMakeSettings.json
+.vs
 
 # Other
 *.png
