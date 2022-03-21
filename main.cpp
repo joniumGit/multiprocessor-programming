@@ -1,7 +1,15 @@
 #include <cstdlib>
 #include <iostream>
 #include "gpucalc.cpp"
-#include "zncc.cpp"
+#include "sys/time.h"
+
+double wt() {
+    struct timeval time;
+    if (gettimeofday(&time, nullptr)) {
+        return 0;
+    }
+    return (double) time.tv_sec + (double) time.tv_usec * .000001;
+}
 
 #define CS_THRESHOLD 16
 #define SCALE_FACTOR 4
@@ -54,10 +62,19 @@ int main() {
     out("b: " << image_1.str)
     separate
     start = clock();
-    Image disp_0 = znccHorizontal_RPLUS(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
-    Image disp_1 = znccHorizontal_RMINUS(&image_0, &image_1, WINDOW_SIZE, MAX_DISPARITY);
+    double wts = wt();
+    //Image disp_0 = znccHorizontal_RPLUS(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
+    //Image disp_1 = znccHorizontal_RMINUS(&image_0, &image_1, WINDOW_SIZE, MAX_DISPARITY);
+
+    //auto data = invokeThreaded(4, &image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
+    auto data = doZNCC(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
+    Image disp_0 = std::get<0>(data);
+    Image disp_1 = std::get<1>(data);
+
     end = clock();
+    double wte = wt();
     std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    std::cout << " - wall: " << wte - wts << "s" << std::endl;
     save(disp_0, "im1-im0-disp")
     save(disp_1, "im0-im1-disp")
     separate
