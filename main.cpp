@@ -1,7 +1,12 @@
-#include <cstdlib>
 #include <iostream>
-#include "gpucalc.cpp"
+#include "image.cpp"
+#include "common.cpp"
+
+#define ZNCC_OPENMP
+
+#include "zncc.hpp"
 #include "sys/time.h"
+
 
 double wt() {
     struct timeval time;
@@ -47,7 +52,7 @@ int main() {
     out(">>> ls")
     system("ls");
     separate
-    inspect_context();
+    initialize();
     Image image_0, image_1;
     load(image_0, "im0")
     load(image_1, "im1")
@@ -63,13 +68,11 @@ int main() {
     separate
     start = clock();
     double wts = wt();
-    //Image disp_0 = znccHorizontal_RPLUS(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
-    //Image disp_1 = znccHorizontal_RMINUS(&image_0, &image_1, WINDOW_SIZE, MAX_DISPARITY);
 
-    //auto data = invokeThreaded(4, &image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
-    auto data = doZNCC(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
-    Image disp_0 = std::get<0>(data);
-    Image disp_1 = std::get<1>(data);
+    // Actual Run
+    auto data = zncc(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
+    Image disp_0 = data.first;
+    Image disp_1 = data.second;
 
     end = clock();
     double wte = wt();

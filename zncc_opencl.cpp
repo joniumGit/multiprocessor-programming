@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <CL/opencl.hpp>
-#include "zncc.cpp"
+#include "common.cpp"
 
 
 const std::string kernelSource = R"(
@@ -138,14 +138,14 @@ void printPlatformInfo(cl::Platform* p) {
     }
 }
 
-void inspect_context() {
+void initialize() {
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
     for (auto &p: platforms) printPlatformInfo(&p);
 }
 
 
-std::tuple<Image, Image> doZNCC(Image* left, Image* right, int window, int max_disparity) {
+std::pair<Image, Image> zncc(Image* left, Image* right, int window, int max_disparity) {
     int width = (int) left->width;
     int height = (int) left->height;
     int size = width * height;

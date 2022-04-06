@@ -2,9 +2,10 @@
 
 #include <iostream>
 #include <cmath>
-#include "lodepng.h"
+#include <vector>
+#include "lodepng/lodepng.h"
 
-#define pixels std::vector<unsigned char>
+typedef std::vector<unsigned char> pixels;
 
 class Image {
 public:
