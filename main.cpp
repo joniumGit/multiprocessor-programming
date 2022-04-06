@@ -1,9 +1,8 @@
+#define ZNCC_OPENMP
+
 #include <iostream>
 #include "image.cpp"
 #include "common.cpp"
-
-#define ZNCC_OPENMP
-
 #include "zncc.hpp"
 #include "sys/time.h"
 
@@ -45,8 +44,14 @@ double wt() {
     lodepng::encode(std::string(base "output/" file ".png"), image.data, image.width, image.height, LCT_GREY);         \
     out("Saved " base "output/" file ".png")
 
+#define START_TIME wt_start = wt(); start = clock();
+#define END_TIME(wt_store) wt_end = wt(); end = clock(); wt_store = wt_end - wt_start; \
+    std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl; \
+    std::cout << " - wall: " << wt_store << "s" << std::endl;
+
 int main() {
     clock_t start, end;
+    double wt_start, wt_end, reduce_step, zncc_step, cs_step, occlusion_step;
     out("Hello, World! Starting OpenCL Application")
     separate
     out(">>> ls")
@@ -58,43 +63,40 @@ int main() {
     load(image_1, "im1")
     separate
     out("Reduced image size")
-    start = clock();
+    START_TIME
     downSample(&image_0, SCALE_FACTOR);
     downSample(&image_1, SCALE_FACTOR);
-    end = clock();
-    std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    END_TIME(reduce_step)
     out("a: " << image_0.str)
     out("b: " << image_1.str)
     separate
-    start = clock();
-    double wts = wt();
-
+    START_TIME
     // Actual Run
     auto data = zncc(&image_1, &image_0, WINDOW_SIZE, MAX_DISPARITY);
     Image disp_0 = data.first;
     Image disp_1 = data.second;
-
-    end = clock();
-    double wte = wt();
-    std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl;
-    std::cout << " - wall: " << wte - wts << "s" << std::endl;
+    END_TIME(zncc_step)
     save(disp_0, "im1-im0-disp")
     save(disp_1, "im0-im1-disp")
     separate
     out("Cross check")
-    start = clock();
+    START_TIME
     crossCheck(&disp_0, &disp_1, CS_THRESHOLD);
-    end = clock();
-    std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    END_TIME(cs_step)
     save(disp_0, "cs-map")
     separate
     out("Oculus")
-    start = clock();
+    START_TIME
     oculus(&disp_0, &disp_1);
-    end = clock();
-    std::cout << " - took: " << (double) (end - start) / CLOCKS_PER_SEC << "s" << std::endl;
+    END_TIME(occlusion_step)
     save(disp_1, "oculus-map")
     separate
     out("Done")
+    separate
+    std::cout << "RESULTS    " << driver << std::endl;
+    std::cout << "REDUCE:    " << reduce_step << "s" << std::endl;
+    std::cout << "ZNCC:      " << zncc_step << "s" << std::endl;
+    std::cout << "CS:        " << cs_step << "s" << std::endl;
+    std::cout << "OCCLUSION: " << occlusion_step << "s" << std::endl;
     return 0;
 }
