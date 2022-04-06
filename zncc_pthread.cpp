@@ -1,5 +1,7 @@
 #include "zncc_common.cpp"
 
+typedef std::vector<double> disparity;
+
 void initialize() {}
 
 inline void znccHorizontalThread(
