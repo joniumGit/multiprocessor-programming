@@ -1,4 +1,4 @@
-#define ZNCC_OPENMP
+#define ZNCC_OPENCL
 
 #include <iostream>
 #include "image.cpp"

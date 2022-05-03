@@ -18,86 +18,172 @@ __kernel void filter(
     int x = get_global_id(1);
     int y = get_global_id(0);
     int index = (y * width) + x;
-    int bestDisparity;
-    float topZncc;
 
-    topZncc = 0;
-    bestDisparity = 0;
+    int plusBestDisparity = 0;
+    int minusBestDisparity = 0;
+
+    float plusTopZncc = 0;
+    float minusTopZncc = 0;
+
     for (int d = 0; d < disparity_max; d++) {
-        if (x + d + window >= width) continue;
-        if (x + d - window < 0) continue;
 
-        float avgL = 0;
-        float avgR = 0;
+        bool doPlus = true;
+        bool doMinus = true;
 
-        for (int j = -window; j < window + 1; j++) {
-            avgL += left[index + j] / (float) window;
-            avgR += right[index + j + d] / (float) window;
+        if (x + d + window >= width) doPlus = false;
+        if (x + d - window < 0) doPlus = false;
+        if (x - d + window >= width) doMinus = false;
+        if (x - d - window < 0) doMinus = false;
+
+        if ( doPlus && doMinus ) {
+
+            float plusLeftAverage = 0;
+            float plusRightAverage = 0;
+
+            float minusLeftAverage = 0;
+            float minusRightAverage = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                plusLeftAverage += left[index + j] / (float) window;
+                plusRightAverage += right[index + j + d] / (float) window;
+
+                minusLeftAverage += right[index + j] / (float) window;
+                minusRightAverage += left[index + j - d] / (float) window;
+
+            }
+
+            float plusTopSum = 0;
+            float plusBottomSumLeft = 0;
+            float plusBottomSumRight = 0;
+
+            float minusTopSum = 0;
+            float minusBottomSumLeft = 0;
+            float minusBottomSumRight = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                float plusValueLeft = left[index + j] - plusLeftAverage;
+                float plusValueRight = right[index + j + d] - plusRightAverage;
+
+                plusTopSum += plusValueLeft * plusValueRight;
+                plusBottomSumLeft += plusValueLeft * plusValueLeft;
+                plusBottomSumRight += plusValueRight * plusValueRight;
+
+                float minusValueLeft = right[index + j] - minusLeftAverage;
+                float minusValueRight = left[index + j - d] - minusRightAverage;
+
+                minusTopSum += minusValueLeft * minusValueRight;
+                minusBottomSumLeft += minusValueLeft * minusValueLeft;
+                minusBottomSumRight += minusValueRight * minusValueRight;
+
+            }
+
+            plusBottomSumLeft = sqrt((float) plusBottomSumLeft);
+            plusBottomSumRight = sqrt((float) plusBottomSumRight);
+
+            minusBottomSumLeft = sqrt((float) minusBottomSumLeft);
+            minusBottomSumRight = sqrt((float) minusBottomSumRight);
+
+            float plusZncc = plusTopSum / ( plusBottomSumLeft * plusBottomSumRight );
+            if ( plusZncc > plusTopZncc ) {
+
+                plusTopZncc = plusZncc;
+                plusBestDisparity = d;
+
+            }
+
+            float minusZncc = minusTopSum / ( minusBottomSumLeft * minusBottomSumRight );
+            if ( minusZncc > minusTopZncc ) {
+
+                minusTopZncc = minusZncc;
+                minusBestDisparity = d;
+
+            }
+
+        } else if ( doPlus ) {
+
+            float plusLeftAverage = 0;
+            float plusRightAverage = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                plusLeftAverage += left[index + j] / (float) window;
+                plusRightAverage += right[index + j + d] / (float) window;
+
+            }
+
+            float plusTopSum = 0;
+            float plusBottomSumLeft = 0;
+            float plusBottomSumRight = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                float plusValueLeft = left[index + j] - plusLeftAverage;
+                float plusValueRight = right[index + j + d] - plusRightAverage;
+
+                plusTopSum += plusValueLeft * plusValueRight;
+                plusBottomSumLeft += plusValueLeft * plusValueLeft;
+                plusBottomSumRight += plusValueRight * plusValueRight;
+            }
+
+            plusBottomSumLeft = sqrt((float) plusBottomSumLeft);
+            plusBottomSumRight = sqrt((float) plusBottomSumRight);
+
+            float plusZncc = plusTopSum / ( plusBottomSumLeft * plusBottomSumRight );
+            if ( plusZncc > plusTopZncc ) {
+
+                plusTopZncc = plusZncc;
+                plusBestDisparity = d;
+
+            }
+
+        } else if ( doMinus ) {
+
+            float minusLeftAverage = 0;
+            float minusRightAverage = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                minusLeftAverage += right[index + j] / (float) window;
+                minusRightAverage += left[index + j - d] / (float) window;
+
+            }
+
+            float minusTopSum = 0;
+            float minusBottomSumLeft = 0;
+            float minusBottomSumRight = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                float minusValueLeft = right[index + j] - minusLeftAverage;
+                float minusValueRight = left[index + j - d] - minusRightAverage;
+
+                minusTopSum += minusValueLeft * minusValueRight;
+                minusBottomSumLeft += minusValueLeft * minusValueLeft;
+                minusBottomSumRight += minusValueRight * minusValueRight;
+
+            }
+
+            minusBottomSumLeft = sqrt((float) minusBottomSumLeft);
+            minusBottomSumRight = sqrt((float) minusBottomSumRight);
+
+            float minusZncc = minusTopSum / ( minusBottomSumLeft * minusBottomSumRight );
+            if ( minusZncc > minusTopZncc ) {
+
+                minusTopZncc = minusZncc;
+                minusBestDisparity = d;
+
+            }
+
+        } else {
+            continue;
         }
 
-        float top_sum = 0;
-        float bot_sum_l = 0;
-        float bot_sum_r = 0;
-
-        for (int j = -window; j < window + 1; j++) {
-            float valL = left[index + j] - avgL;
-            float valR = right[index + j + d] - avgR;
-            top_sum += valL * valR;
-            bot_sum_l += valL * valL;
-            bot_sum_r += valR * valR;
-        }
-
-        bot_sum_l = sqrt((float) bot_sum_l);
-        bot_sum_r = sqrt((float) bot_sum_r);
-
-        float zncc = top_sum / (bot_sum_l * bot_sum_r);
-
-        if (zncc > topZncc) {
-            topZncc = zncc;
-            bestDisparity = d;
-        }
     }
 
-    out1[index] = (int) bestDisparity;
-
-    topZncc = 0;
-    bestDisparity = 0;
-    for (int d = 0; d < disparity_max; d++) {
-        if (x - d + window >= width) continue;
-        if (x - d - window < 0) continue;
-
-        float avgL = 0;
-        float avgR = 0;
-
-        for (int j = -window; j < window + 1; j++) {
-            avgL += right[index + j] / (float) window;
-            avgR += left[index + j - d] / (float) window;
-        }
-
-        float top_sum = 0;
-        float bot_sum_l = 0;
-        float bot_sum_r = 0;
-
-        for (int j = -window; j < window + 1; j++) {
-            float valL = right[index + j] - avgL;
-            float valR = left[index + j - d] - avgR;
-            top_sum += valL * valR;
-            bot_sum_l += valL * valL;
-            bot_sum_r += valR * valR;
-        }
-
-        bot_sum_l = sqrt((float) bot_sum_l);
-        bot_sum_r = sqrt((float) bot_sum_r);
-
-        float zncc = top_sum / (bot_sum_l * bot_sum_r);
-
-        if (zncc > topZncc) {
-            topZncc = zncc;
-            bestDisparity = d;
-        }
-    }
-
-    out2[index] = (int) bestDisparity;
+    out1[index] = (int) plusBestDisparity;
+    out2[index] = (int) minusBestDisparity;
 }
 )";
 
