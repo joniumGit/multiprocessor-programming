@@ -12,8 +12,9 @@ std::pair<Image, Image> zncc(Image* left, Image* right, int window, int max_disp
     double lineCount = 0;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            disparityMapLTR[idx] = for_x_y_plus(x, y, &left->data, &right->data, window, width, max_disparity);
-            disparityMapRTL[idx] = for_x_y_minus(x, y, &right->data, &left->data, window, width, max_disparity);
+            auto value = znccBothWays(x, y, &left->data, &right->data, window, width, max_disparity);
+            disparityMapLTR[idx] = value.first;
+            disparityMapRTL[idx] = value.second;
             idx++;
         }
         lineCount++;

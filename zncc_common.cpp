@@ -2,12 +2,7 @@
 
 #include "common.cpp"
 
-#define WINDOW(loop_var) for(int loop_var = -window; loop_var < window + 1; loop_var++)
-#define LEFT(loop_var) (*left)[(y * width) + x + loop_var]
-#define RIGHT(loop_var, offset) (*right)[(y * width) + x + loop_var offset d]
-#define CHECKS(offset) if (x offset d + window >= width) continue; if(x offset d - window < 0) continue;
-
-inline int for_x_y_minus(
+inline std::pair<int, int> znccBothWays(
         int x,
         int y,
         const pixels* left,
@@ -16,96 +11,170 @@ inline int for_x_y_minus(
         int width,
         int disparity_max
 ) {
-    double topZncc = 0;
-    int bestDisparity = 0;
+    int index = (y * width) + x;
+
+    int plusBestDisparity = 0;
+    int minusBestDisparity = 0;
+
+    double plusTopZncc = 0;
+    double minusTopZncc = 0;
+
     for (int d = 0; d < disparity_max; d++) {
-        CHECKS(-)
 
-        // Avg
-        double avgL = 0;
-        double avgR = 0;
-        WINDOW(j) {
-            avgL += LEFT(j) / (double) window;
-            avgR += RIGHT(j, -) / (double) window;
+        bool doPlus = true;
+        bool doMinus = true;
+
+        if (x + d + window >= width) doPlus = false;
+        if (x + d - window < 0) doPlus = false;
+        if (x - d + window >= width) doMinus = false;
+        if (x - d - window < 0) doMinus = false;
+
+        if (doPlus && doMinus) {
+
+            double plusLeftAverage = 0;
+            double plusRightAverage = 0;
+
+            double minusLeftAverage = 0;
+            double minusRightAverage = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                plusLeftAverage += (*left)[index + j] / (double) window;
+                plusRightAverage += (*right)[index + j + d] / (double) window;
+
+                minusLeftAverage += (*right)[index + j] / (double) window;
+                minusRightAverage += (*left)[index + j - d] / (double) window;
+
+            }
+
+            double plusTopSum = 0;
+            double plusBottomSumLeft = 0;
+            double plusBottomSumRight = 0;
+
+            double minusTopSum = 0;
+            double minusBottomSumLeft = 0;
+            double minusBottomSumRight = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                double plusValueLeft = (*left)[index + j] - plusLeftAverage;
+                double plusValueRight = (*right)[index + j + d] - plusRightAverage;
+
+                plusTopSum += plusValueLeft * plusValueRight;
+                plusBottomSumLeft += plusValueLeft * plusValueLeft;
+                plusBottomSumRight += plusValueRight * plusValueRight;
+
+                double minusValueLeft = (*right)[index + j] - minusLeftAverage;
+                double minusValueRight = (*left)[index + j - d] - minusRightAverage;
+
+                minusTopSum += minusValueLeft * minusValueRight;
+                minusBottomSumLeft += minusValueLeft * minusValueLeft;
+                minusBottomSumRight += minusValueRight * minusValueRight;
+
+            }
+
+            plusBottomSumLeft = sqrt((double) plusBottomSumLeft);
+            plusBottomSumRight = sqrt((double) plusBottomSumRight);
+
+            minusBottomSumLeft = sqrt((double) minusBottomSumLeft);
+            minusBottomSumRight = sqrt((double) minusBottomSumRight);
+
+            double plusZncc = plusTopSum / (plusBottomSumLeft * plusBottomSumRight);
+            if (plusZncc > plusTopZncc) {
+
+                plusTopZncc = plusZncc;
+                plusBestDisparity = d;
+
+            }
+
+            double minusZncc = minusTopSum / (minusBottomSumLeft * minusBottomSumRight);
+            if (minusZncc > minusTopZncc) {
+
+                minusTopZncc = minusZncc;
+                minusBestDisparity = d;
+
+            }
+
+        } else if (doPlus) {
+
+            double plusLeftAverage = 0;
+            double plusRightAverage = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                plusLeftAverage += (*left)[index + j] / (double) window;
+                plusRightAverage += (*right)[index + j + d] / (double) window;
+
+            }
+
+            double plusTopSum = 0;
+            double plusBottomSumLeft = 0;
+            double plusBottomSumRight = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                double plusValueLeft = (*left)[index + j] - plusLeftAverage;
+                double plusValueRight = (*right)[index + j + d] - plusRightAverage;
+
+                plusTopSum += plusValueLeft * plusValueRight;
+                plusBottomSumLeft += plusValueLeft * plusValueLeft;
+                plusBottomSumRight += plusValueRight * plusValueRight;
+            }
+
+            plusBottomSumLeft = sqrt((double) plusBottomSumLeft);
+            plusBottomSumRight = sqrt((double) plusBottomSumRight);
+
+            double plusZncc = plusTopSum / (plusBottomSumLeft * plusBottomSumRight);
+            if (plusZncc > plusTopZncc) {
+
+                plusTopZncc = plusZncc;
+                plusBestDisparity = d;
+
+            }
+
+        } else if (doMinus) {
+
+            double minusLeftAverage = 0;
+            double minusRightAverage = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                minusLeftAverage += (*right)[index + j] / (double) window;
+                minusRightAverage += (*left)[index + j - d] / (double) window;
+
+            }
+
+            double minusTopSum = 0;
+            double minusBottomSumLeft = 0;
+            double minusBottomSumRight = 0;
+
+            for (int j = -window; j < window + 1; j++) {
+
+                double minusValueLeft = (*right)[index + j] - minusLeftAverage;
+                double minusValueRight = (*left)[index + j - d] - minusRightAverage;
+
+                minusTopSum += minusValueLeft * minusValueRight;
+                minusBottomSumLeft += minusValueLeft * minusValueLeft;
+                minusBottomSumRight += minusValueRight * minusValueRight;
+
+            }
+
+            minusBottomSumLeft = sqrt((double) minusBottomSumLeft);
+            minusBottomSumRight = sqrt((double) minusBottomSumRight);
+
+            double minusZncc = minusTopSum / (minusBottomSumLeft * minusBottomSumRight);
+            if (minusZncc > minusTopZncc) {
+
+                minusTopZncc = minusZncc;
+                minusBestDisparity = d;
+
+            }
+
+        } else {
+            continue;
         }
 
-        // ZNCC
-        double top_sum = 0;
-        double bot_sum_l = 0;
-        double bot_sum_r = 0;
-
-        WINDOW(j) {
-            // Get values
-            double valL = LEFT(j) - avgL;
-            double valR = RIGHT(j, -) - avgR;
-            // Do sum
-            top_sum += valL * valR;
-            bot_sum_l += valL * valL;
-            bot_sum_r += valR * valR;
-        }
-
-        // SQRT
-        bot_sum_l = std::sqrt(bot_sum_l);
-        bot_sum_r = std::sqrt(bot_sum_r);
-
-        // ZNCC
-        double zncc = top_sum / (bot_sum_l * bot_sum_r);
-        if (zncc > topZncc) {
-            topZncc = zncc;
-            bestDisparity = d;
-        }
     }
-    return bestDisparity;
+
+    return std::make_pair(plusBestDisparity, minusBestDisparity);
 }
-
-inline int for_x_y_plus(
-        int x,
-        int y,
-        const pixels* left,
-        const pixels* right,
-        int window,
-        int width,
-        int disparity_max
-) {
-    double topZncc = 0;
-    int bestDisparity = 0;
-    for (int d = 0; d < disparity_max; d++) {
-        CHECKS(+)
-
-        // Avg
-        double avgL = 0;
-        double avgR = 0;
-        WINDOW(j) {
-            avgL += LEFT(j) / (double) window;
-            avgR += RIGHT(j, +) / (double) window;
-        }
-
-        // ZNCC
-        double top_sum = 0;
-        double bot_sum_l = 0;
-        double bot_sum_r = 0;
-
-        WINDOW(j) {
-            // Get values
-            double valL = LEFT(j) - avgL;
-            double valR = RIGHT(j, +) - avgR;
-            // Do sum
-            top_sum += valL * valR;
-            bot_sum_l += valL * valL;
-            bot_sum_r += valR * valR;
-        }
-
-        // SQRT
-        bot_sum_l = std::sqrt(bot_sum_l);
-        bot_sum_r = std::sqrt(bot_sum_r);
-
-        // ZNCC
-        double zncc = top_sum / (bot_sum_l * bot_sum_r);
-        if (zncc > topZncc) {
-            topZncc = zncc;
-            bestDisparity = d;
-        }
-    }
-    return bestDisparity;
-}
-

@@ -17,8 +17,9 @@ inline void znccHorizontalThread(
 ) {
     for (int y = from; y < to; y++) {
         for (int x = 0; x < width; x++) {
-            (*outLTR)[(y * width) + x] = for_x_y_plus(x, y, left, right, window, width, max_disparity);
-            (*outRTL)[(y * width) + x] = for_x_y_minus(x, y, right, left, window, width, max_disparity);
+            auto value = znccBothWays(x, y, left, right, window, width, max_disparity);
+            (*outLTR)[(y * width) + x] = value.first;
+            (*outRTL)[(y * width) + x] = value.second;
         }
     }
 }
